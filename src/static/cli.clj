@@ -1,9 +1,7 @@
 (ns static.cli
-  (:require [clojure.java.browse :as browse]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]
             [clojure.tools.logging :as log]
-            [ring.adapter.jetty :as jetty]
             [static.config :as config]
             [static.core :as core]
             [static.io :as io]
@@ -35,31 +33,8 @@
 
     (logging/setup-logging!)
 
-    (let [out-dir (:out-dir (config/config))
-          tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
-
-      (when (or tmp
-                (and (:atomic-build (config/config))
-                     build))
-        (let [loc (FilenameUtils/normalize tmp-dir)]
-          (config/set!-config :out-dir loc)
-          (log/info (str "Using tmp location: " (:out-dir (config/config))))))
-
-      (cond build (logging/log-time-elapsed "Build took "
-                                            (core/create))
-            watch (do (core/watch-and-rebuild)
-                      (future (jetty/run-jetty core/serve-static {:port 8080}))
-                      (browse/browse-url "http://127.0.0.1:8080"))
-            jetty (do (future (jetty/run-jetty core/serve-static {:port 8080}))
-                      (browse/browse-url "http://127.0.0.1:8080"))
-            rsync (let [{:keys [rsync out-dir host user deploy-dir]} (config/config)]
-                    (io/deploy-rsync rsync out-dir host user deploy-dir))
-            :default (println "Use --help for options."))
-
-      (when (and (:atomic-build (config/config))
-                 build)
-        (FileUtils/deleteDirectory (File. out-dir))
-        (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir))))
-
-    (when-not watch
-      (shutdown-agents))))
+    (cond build (core/do-build!)
+          watch (core/do-watch! tmp)
+          jetty (core/do-jetty! tmp)
+          rsync (core/do-rsync! tmp)
+          :default (println "Use --help for options."))))

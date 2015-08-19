@@ -1,5 +1,6 @@
 (ns static.core
   (:require [clojure.core.memoize :refer [memo-clear!]]
+            [clojure.java.browse :as browse]
             [clojure.string :as str]
             [clojure.tools.logging :as log]
             [hiccup.core :as hiccup]
@@ -371,3 +372,49 @@
                         (catch Exception e
                           (log/error (str "Exception thrown while building site! " e))))))))
 
+(defn do-watch! [tmp?]
+  (let [out-dir (:out-dir (config/config))
+        tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
+    (when tmp?
+      (let [loc (FilenameUtils/normalize tmp-dir)]
+        (config/set!-config :out-dir loc)
+        (log/info (str "Using tmp location: " (:out-dir (config/config))))))
+    (do (watch-and-rebuild)
+        (future (jetty/run-jetty serve-static {:port 8080}))
+        (browse/browse-url "http://127.0.0.1:8080"))))
+
+(defn do-build! []
+  (let [out-dir (:out-dir (config/config))
+        tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
+    (when (:atomic-build (config/config))
+      (let [loc (FilenameUtils/normalize tmp-dir)]
+        (config/set!-config :out-dir loc)
+        (log/info (str "Using tmp location: " (:out-dir (config/config))))))
+    (logging/log-time-elapsed "Build took "
+                              (create))
+    (when (:atomic-build (config/config))
+      (FileUtils/deleteDirectory (File. out-dir))
+      (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir)))
+    (shutdown-agents)))
+
+(defn do-jetty! [tmp?]
+  (let [out-dir (:out-dir (config/config))
+        tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
+    (when tmp?
+      (let [loc (FilenameUtils/normalize tmp-dir)]
+        (config/set!-config :out-dir loc)
+        (log/info (str "Using tmp location: " (:out-dir (config/config))))))
+    (do (future (jetty/run-jetty serve-static {:port 8080}))
+        (browse/browse-url "http://127.0.0.1:8080"))
+    (shutdown-agents)))
+
+(defn do-rsync! [tmp?]
+  (let [out-dir (:out-dir (config/config))
+        tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
+    (when tmp?
+      (let [loc (FilenameUtils/normalize tmp-dir)]
+        (config/set!-config :out-dir loc)
+        (log/info (str "Using tmp location: " (:out-dir (config/config))))))
+    (let [{:keys [rsync out-dir host user deploy-dir]} (config/config)]
+      (io/deploy-rsync rsync out-dir host user deploy-dir))
+    (shutdown-agents)))
