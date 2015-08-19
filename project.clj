@@ -15,4 +15,5 @@
   :main static.cli
   :aot [static.cli]
   :jar-name "static.jar"
-  :uberjar-name "static-app.jar")
+  :profiles {:uberjar {:aot :all
+                       :uberjar-name "static-app.jar"}})
