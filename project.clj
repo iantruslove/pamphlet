@@ -7,11 +7,12 @@
                  [hiccup "1.0.5"]
                  [org.pegdown/pegdown "1.5.0"]
                  [org.clojars.amit/commons-io "1.4.0"]
+                 [org.clojure/core.memoize "0.5.6"]
                  [ring/ring-core "1.4.0"]
                  [ring/ring-jetty-adapter "1.4.0"]
                  [watchtower "0.1.1"]
-                 [stringtemplate-clj "0.1.0"]
-                 [org.clojure/core.memoize "0.5.6"]]
-  :main static.core
+                 [stringtemplate-clj "0.1.0"]]
+  :main static.cli
+  :aot [static.cli]
   :jar-name "static.jar"
   :uberjar-name "static-app.jar")
