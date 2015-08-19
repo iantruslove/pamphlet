@@ -23,7 +23,7 @@
 
 (deftest test-markdown
   (let [[metadata content] (read-doc "resources/site/dummy.markdown")]
-    (is (= "unit test"  (:tags metadata)))
+    (is (= "unit test" (:tags metadata)))
     (is (= "some dummy desc" (:description metadata)))
     (is (= "dummy content" (:title metadata)))
     (is (= "Some dummy file for unit testing."
