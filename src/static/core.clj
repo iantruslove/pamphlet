@@ -19,7 +19,7 @@
            (org.apache.commons.io FileUtils FilenameUtils))
   (:gen-class))
 
-(defn setup-logging []
+(defn setup-logging! []
   (let [logger (java.util.logging.Logger/getLogger "")]
     (doseq [handler (.getHandlers logger)]
       (. handler setFormatter
@@ -412,7 +412,7 @@
       (println summary)
       (System/exit 0))
 
-    (setup-logging)
+    (setup-logging!)
 
     (let [out-dir (:out-dir (config/config))
           tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]

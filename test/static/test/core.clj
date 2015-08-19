@@ -10,7 +10,7 @@
   (FileUtils/deleteDirectory f))
 
 (defn dummy-fs-fixture [f]
-  (setup-logging)
+  (setup-logging!)
   (create-dummy-fs)
   (create)
   (f)
