@@ -104,15 +104,15 @@
         in-dir (File. (io/dir-path :posts))
         posts (take 10 (reverse (io/list-files :posts)))]
     (io/write-out-dir "rss-feed"
-                   (hiccup/html (xml-declaration "UTF-8")
-                         (doctype :xhtml-strict)
-                         [:rss {:version "2.0"}
-                          [:channel
-                           [:title (escape-html site-title)]
-                           [:link site-url]
-                           [:description
-                            (escape-html site-description)]
-                           (pmap post-xml posts)]]))))
+                      (hiccup/html (xml-declaration "UTF-8")
+                                   (doctype :xhtml-strict)
+                                   [:rss {:version "2.0"}
+                                    [:channel
+                                     [:title (escape-html site-title)]
+                                     [:link site-url]
+                                     [:description
+                                      (escape-html site-description)]
+                                     (pmap post-xml posts)]]))))
 
 (defn create-sitemap
   "Create sitemap."
@@ -183,10 +183,10 @@
                [:a {:href (str "/latest-posts/" (+ page 1) "/")}
                 "Newer Entries &raquo;"]]]
     (cond
-     (<= count-total posts-per-page) nil
-     (= page max-index) (list older)
-     (= page 0) (list newer)
-     :default (list older newer))))
+      (<= count-total posts-per-page) nil
+      (= page max-index) (list older)
+      (= page 0) (list newer)
+      :default (list older newer))))
 
 (defn snippet
   "Render a post for display in index pages."
@@ -207,12 +207,12 @@
                 site-title
                 site-description
                 default-template]} (config/config)
-        posts (partition posts-per-page
-                         posts-per-page
-                         []
-                         (reverse (io/list-files :posts)))
-        pages (partition 2 (interleave (reverse posts) (range)))
-        [_ max-index] (last pages)]
+                posts (partition posts-per-page
+                                 posts-per-page
+                                 []
+                                 (reverse (io/list-files :posts)))
+                pages (partition 2 (interleave (reverse posts) (range)))
+                [_ max-index] (last pages)]
     (doseq [[posts page] pages]
       (io/write-out-dir
        (str "latest-posts/" page "/index.html")
