@@ -6,6 +6,7 @@
             [hiccup.core :as hiccup]
             [hiccup.page :refer :all]
             [hiccup.util :refer :all]
+            [ring.adapter.jetty :as jetty]
             [ring.util.response :refer :all]
             [static.config :as config]
             [static.io :as io]
