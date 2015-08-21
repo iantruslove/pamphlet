@@ -382,7 +382,7 @@
                           (log/error (str "Exception thrown while building site! " e))))))))
 
 (defn new-tmp-dir []
-  (str (System/getProperty "java.io.tmpdir") "/" "static/"))
+  (str (System/getProperty "java.io.tmpdir") "static/"))
 
 (defn do-watch! [use-system-tmp-dir?]
   (when use-system-tmp-dir?
