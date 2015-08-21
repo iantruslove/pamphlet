@@ -12,8 +12,7 @@
                  [ring/ring-jetty-adapter "1.4.0"]
                  [watchtower "0.1.1"]
                  [stringtemplate-clj "0.1.0"]]
-  :main static.cli
-  :aot [static.cli]
-  :jar-name "static.jar"
-  :profiles {:uberjar {:aot :all
+  :profiles {:uberjar {:main static.cli
+                       :aot :all
+                       :jar-name "static.jar"
                        :uberjar-name "static-app.jar"}})

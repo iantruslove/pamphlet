@@ -15,17 +15,18 @@
                [nil "--jetty" "View Site."]
                [nil "--watch" "Watch Site and Rebuild on Change."]
                [nil "--rsync" "Deploy Site."]
-               [nil "--help" "Show help"]])
+               [nil "--help" "Show help"]
+               [nil "--options" "Show help"]])
 
 (defn -main [& args]
   (let [{:keys [options summary errors]} (cli/parse-opts args cli-opts)
-        {:keys [build tmp jetty watch rsync help]} options]
+        {show-options :options :keys [build tmp jetty watch rsync help]} options]
 
     (when errors
       (println (str/join "\n" errors))
       (System/exit 1))
 
-    (when help
+    (when (or help show-options)
       (println "Static: a static blog generator.\n")
       (println "Usage: static <option>:")
       (println summary)
