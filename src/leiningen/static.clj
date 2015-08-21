@@ -11,6 +11,11 @@
     (:static-config project)
     (config/load-standalone-config)))
 
+(defn block-thread-forever []
+  (loop []
+    (Thread/sleep 1000)
+    (recur)))
+
 (defn ^:no-project-needed ^:pass-through-help
   static
   "Static: a static website generator.
@@ -29,10 +34,10 @@
       (do (logging/setup-logging!)
           (config/init-config! (get-config project))
           (cond build (core/do-build!)
-                watch (core/do-watch! tmp)
-                jetty (core/do-jetty! tmp)
-                rsync (core/do-rsync! tmp))
-          ;; Stop lein from exiting
-          (loop []
-            (Thread/sleep 1000)
-            (recur))))))
+                watch (do (core/do-watch! tmp)
+                          ;; Stop lein from exiting
+                          (block-thread-forever))
+                jetty (do (core/do-jetty! tmp)
+                          ;; Stop lein from exiting
+                          (block-thread-forever))
+                rsync (core/do-rsync! tmp))))))
