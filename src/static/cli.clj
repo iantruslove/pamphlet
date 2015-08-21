@@ -17,6 +17,9 @@
                [nil "--rsync" "Deploy Site."]
                [nil "--help" "Show help"]
                [nil "--options" "Show help"]])
+(defn summarize-opts []
+  (:summary (cli/parse-opts [] cli-opts)))
+
 
 (defn -main [& args]
   (let [{:keys [options summary errors]} (cli/parse-opts args cli-opts)
@@ -26,10 +29,10 @@
       (println (str/join "\n" errors))
       (System/exit 1))
 
-    (when (or help show-options)
-      (println "Static: a static blog generator.\n")
-      (println "Usage: static <option>:")
-      (println summary)
+    (when help
+      (println (str/join "\n" ["Static: a static blog generator."
+                               "Usage: static <option>:"
+                               (summarize-opts)]))
       (System/exit 0))
 
     (logging/setup-logging!)
