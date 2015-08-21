@@ -6,6 +6,11 @@
             [static.core :as core]
             [static.logging :as logging]))
 
+(defn get-config [project]
+  (if (map? (:static-config project))
+    (:static-config project)
+    (config/load-standalone-config)))
+
 (defn ^:no-project-needed ^:pass-through-help
   static
   "Static: a static website generator.
@@ -22,7 +27,7 @@
                                     (cli/summarize-opts)]))
       (some identity [build watch jetty rsync])
       (do (logging/setup-logging!)
-          (config/init-config! (config/load-standalone-config))
+          (config/init-config! (get-config project))
           (cond build (core/do-build!)
                 watch (core/do-watch! tmp)
                 jetty (core/do-jetty! tmp)
