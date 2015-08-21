@@ -1,6 +1,10 @@
 (ns leiningen.static
   (:require [clojure.pprint :refer [pprint]]
-            [static.cli :as cli]))
+            [clojure.string :as str]
+            [static.cli :as cli]
+            [static.config :as config]
+            [static.core :as core]
+            [static.logging :as logging]))
 
 (defn ^:no-project-needed ^:pass-through-help
   static
@@ -8,8 +12,22 @@
 
   use --help to see help."
   [project & args]
-  (apply cli/-main args)
-  ;; Stop lein from exiting
-  (loop []
-    (Thread/sleep 1000)
-    (recur)))
+  (let [{:keys [options errors]} (cli/parse-args args)
+        {show-options :options :keys [build tmp jetty watch rsync help]} options]
+
+    (cond
+      errors (println (str/join "\n" errors))
+      help (println (str/join "\n" ["Static: a static blog generator."
+                                    "Usage: lein static <option>:"
+                                    (cli/summarize-opts)]))
+      (some identity [build watch jetty rsync])
+      (do (logging/setup-logging!)
+          (config/init-config! (config/load-standalone-config))
+          (cond build (core/do-build!)
+                watch (core/do-watch! tmp)
+                jetty (core/do-jetty! tmp)
+                rsync (core/do-rsync! tmp))
+          ;; Stop lein from exiting
+          (loop []
+            (Thread/sleep 1000)
+            (recur))))))
