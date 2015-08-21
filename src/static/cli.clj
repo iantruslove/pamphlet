@@ -15,8 +15,8 @@
                [nil "--jetty" "View Site."]
                [nil "--watch" "Watch Site and Rebuild on Change."]
                [nil "--rsync" "Deploy Site."]
-               [nil "--help" "Show help"]
-               [nil "--options" "Show help"]])
+               [nil "--help" "Show help"]])
+
 (defn summarize-opts []
   (:summary (cli/parse-opts [] cli-opts)))
 

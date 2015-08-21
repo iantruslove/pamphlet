@@ -2,7 +2,8 @@
   (:require [clojure.pprint :refer [pprint]]
             [static.cli :as cli]))
 
-(defn ^:no-project-needed static
+(defn ^:no-project-needed ^:pass-through-help
+  static
   "Static: a static website generator.
 
   use --help to see help."
