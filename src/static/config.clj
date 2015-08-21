@@ -22,19 +22,30 @@
 
 (defonce current-config (atom nil))
 
-(defn init-config! []
-  (reset! current-config
-          (try
-            (let [config (apply hash-map (read-string (slurp (File. "config.clj"))))]
-              ;;if emacs key is set make sure executable exists.
-              (when (:emacs config)
-                (if (not (.exists (File. (:emacs config))))
-                  (do (log/error "Path to Emacs not valid.")
-                      (System/exit 0))))
-              (merge config-defaults config))
-            (catch Exception e (do
-                                 (log/info "Configuration not found using defaults.")
-                                 config-defaults)))))
+(defn load-standalone-config
+  "Loads and parses key/val pairs from config.clj.
+  Returns nil if file does not exist."
+  []
+  (let [config-file (File. "config.clj")]
+    (when (.exists config-file)
+      (apply hash-map (read-string (slurp config-file))))))
+
+(defn validate-config
+  "Returns the config if it is valid, nil otherwise."
+  [config]
+  (cond
+    ;;if emacs key is set make sure executable exists.
+    (and (:emacs config) (not (.exists (File. (:emacs config)))))
+    (log/error "Path to Emacs not valid.")
+    :else config))
+
+(defn init-config!
+  "Resets the current system configuration."
+  [config]
+  (if-let [config (validate-config config)]
+    (reset! current-config (merge config-defaults config))
+    (do (log/error "No valid config.")
+        (System/exit 0))))
 
 (defn set-config! [k v]
   (swap! current-config #(assoc % k v)))
@@ -43,5 +54,5 @@
   ([]
    (if @current-config
      @current-config
-     (init-config!)))
+     (init-config! (load-standalone-config))))
   ([k] (get (config) k)))
