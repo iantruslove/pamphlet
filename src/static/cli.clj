@@ -20,10 +20,15 @@
 (defn summarize-opts []
   (:summary (cli/parse-opts [] cli-opts)))
 
+(defn parse-args
+  "Returns a map of :options (a map of enabled options), :summary (a string),
+  and :errors (possibly nil, possibly an error string)."
+  [args]
+  (cli/parse-opts args cli-opts))
 
 (defn -main [& args]
-  (let [{:keys [options summary errors]} (cli/parse-opts args cli-opts)
-        {show-options :options :keys [build tmp jetty watch rsync help]} options]
+  (let [{:keys [options errors]} (parse-args args)
+        {:keys [build tmp jetty watch rsync help]} options]
 
     (when errors
       (println (str/join "\n" errors))
