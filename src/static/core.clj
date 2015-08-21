@@ -394,6 +394,7 @@
 
 (defn do-build! []
   (let [tmp-dir (new-tmp-dir)
+        out-dir (config/config :out-dir)
         atomic-build? (config/config :atomic-build)]
     (when atomic-build?
       (config/set-config! :out-dir (FilenameUtils/normalize tmp-dir))
@@ -401,9 +402,9 @@
     (logging/log-time-elapsed "Build took "
                               (create))
     (when atomic-build?
-      (let [out-dir (config/config :out-dir)]
-        (FileUtils/deleteDirectory (File. out-dir))
-        (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir))))
+      (log/info "Moving generated site from" tmp-dir "to" out-dir)
+      (FileUtils/deleteDirectory (File. out-dir))
+      (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir)))
     (shutdown-agents)))
 
 (defn do-jetty! [use-system-tmp-dir?]
