@@ -33,6 +33,8 @@
 
     (logging/setup-logging!)
 
+    (config/init-config! (config/load-standalone-config))
+
     (cond build (core/do-build!)
           watch (core/do-watch! tmp)
           jetty (core/do-jetty! tmp)

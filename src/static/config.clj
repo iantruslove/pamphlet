@@ -51,8 +51,5 @@
   (swap! current-config #(assoc % k v)))
 
 (defn config
-  ([]
-   (if @current-config
-     @current-config
-     (init-config! (load-standalone-config))))
+  ([] @current-config)
   ([k] (get (config) k)))

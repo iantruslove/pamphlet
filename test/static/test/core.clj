@@ -1,5 +1,6 @@
 (ns static.test.core
   (:require [clojure.test :refer :all]
+            [static.config :as config]
             [static.core :refer :all]
             [static.io :refer :all]
             [static.logging :as logging]
@@ -13,6 +14,7 @@
 (defn dummy-fs-fixture [f]
   (logging/setup-logging!)
   (create-dummy-fs)
+  (config/init-config! (config/load-standalone-config))
   (create)
   (f)
   (delete-file-recursively (File. "resources/"))
