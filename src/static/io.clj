@@ -1,6 +1,7 @@
 (ns static.io
   (:require [clojure.core.memoize :refer [memo]]
             [clojure.java.shell :as sh]
+            [clojure.string :as str]
             [clojure.tools.logging :as log]
             [cssgen :as css-gen]
             [hiccup.core :as hiccup]
@@ -62,7 +63,7 @@
   (let [metadata {:extension "css" :template :none}
         content (read-string
                  (slurp file :encoding (config/config :encoding)))
-        to-css  #(clojure.string/join "\n" (doall (map css-gen/css %)))]
+        to-css  #(str/join "\n" (doall (map css-gen/css %)))]
     [metadata (delay (binding [*ns* (the-ns 'static.core)] (-> content eval to-css)))]))
 
 (defn read-doc [f]
