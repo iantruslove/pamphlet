@@ -107,21 +107,22 @@
                                            "org"
                                            "html"]) true)) [] )))
 
-(def read-template
-  (memo
-   (fn [template]
-     (let [extension (FilenameUtils/getExtension (str template))]
-       (cond (= extension "clj")
-             [:clj
-              (-> (str (dir-path :templates) template)
-                  (File.)
-                  (#(str \(
-                         (slurp % :encoding (config/config :encoding))
-                         \)))
-                  read-string)]
-             :default
-             [:html
-              (string-template/load-template (dir-path :templates) template)])))))
+(defn read-template*
+  [template]
+  (let [extension (FilenameUtils/getExtension (str template))]
+    (cond (= extension "clj")
+          [:clj
+           (-> (str (dir-path :templates) template)
+               (File.)
+               (#(str \(
+                      (slurp % :encoding (config/config :encoding))
+                      \)))
+               read-string)]
+          :default
+          [:html
+           (string-template/load-template (dir-path :templates) template)])))
+
+(def read-template (memo read-template*))
 
 (defn write-out-dir [file str]
   (let [{:keys [out-dir encoding]} (config/config)]
