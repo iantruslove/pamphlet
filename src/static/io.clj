@@ -15,13 +15,25 @@
   (let [idx (.indexOf content "---" 4)]
     [(.substring content 4 idx) (.substring content (+ 3 idx))]))
 
-(defn- prepare-metadata [metadata]
-  (reduce (fn [h [_ k v]]
-            (let [key (keyword (.toLowerCase k))]
-              (if (not (h key))
-                (assoc h key v)
-                h)))
-          {} (re-seq #"([^:#\+]+): (.+)(\n|$)" metadata)))
+(defn- metadata-entries [metadata-line]
+  (if-let [matches (re-find #"([^:#\+]+): (.+)$" metadata-line)]
+    (let [[_ k v] matches
+          metadata-key (keyword (.toLowerCase k))
+          metadata-map {metadata-key v}]
+      (cond-> metadata-map
+        (= metadata-key :tags) (assoc :keyword-tags (map keyword (str/split v #" ")))
+        (= metadata-key :keywords) (assoc :keyword-keywords (map keyword (str/split v #" ")))))
+    {}))
+
+(defn- prepare-metadata
+  "Converts a string of lines of \"<key>: <val>\" into a map of
+  {:key val ...}.
+  The values for `:tags` and `:keywords` are split into lists of keywords."
+  [metadata]
+  (->> (str/split-lines metadata)
+       (map metadata-entries)
+       reverse
+       (reduce merge {})))
 
 (defn- read-markdown [file]
   (let [[metadata content]
