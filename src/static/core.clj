@@ -72,10 +72,8 @@
    (pmap
     #(let [f %
            [metadata content] (io/read-doc f)]
-
        (if (empty? @content)
          (log/warn (str "Empty Content: " f)))
-
        (io/write-out-dir
         (site-url f (:extension metadata))
         (template [(assoc metadata :type :site) @content])))
@@ -304,10 +302,9 @@
            out-file (if (empty? (:post-out-subdir (config/config)))
                       out-file
                       (str (:post-out-subdir (config/config)) "/" out-file))]
-
+       (log/debug "Process post:" (.getName f) "->" out-file)
        (when (empty? @content)
          (log/warn (str "Empty Content: " f)))
-
        (io/write-out-dir
         (str out-file "/index.html")
         (template

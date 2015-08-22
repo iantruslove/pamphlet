@@ -67,8 +67,7 @@
 
 (defn read-doc [f]
   (let [extension (FilenameUtils/getExtension (str f))]
-    (cond (or (= extension "markdown") (= extension "md"))
-          (read-markdown f)
+    (cond (= extension "markdown") (read-markdown f)
           (= extension "md") (read-markdown f)
           (= extension "org") (read-org f)
           (= extension "html") (read-html f)
