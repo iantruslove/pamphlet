@@ -6,6 +6,7 @@
             [cssgen :as css-gen]
             [hiccup.core :as hiccup]
             [static.config :as config]
+            [static.io.cache :as cache]
             [stringtemplate-clj.core :as string-template])
   (:import (java.io File)
            (org.apache.commons.io FileUtils FilenameUtils)
@@ -46,7 +47,7 @@
         (split-file (slurp file :encoding (config/config :encoding)))]
     [(prepare-metadata metadata) (delay content)]))
 
-(defn read-org [file]
+(defn read-org* [file]
   (if (not (config/config :emacs))
     (do (log/error "Path to Emacs is required for org files.")
         (System/exit 0)))
@@ -61,6 +62,14 @@
                                      " (find-file \"" (.getAbsolutePath file) "\") "
                                      org-export-command ")"))))]
     [metadata content]))
+
+;; We really need to parse each file once. So we memoize the results
+(defn read-org [file]
+  ;; BUG: not invalidating the file cache prevents `--watch` from picking up
+  ;; changes to org files. Need to get a bit more clever, and either
+  ;; use some kind of cache busting based on the file watcher, or
+  ;; parse the org files quickly (e.g. without emacs).
+  (cache/read-cached-file [:org file] read-org*))
 
 (defn- read-clj [file]
   (let [[metadata & content] (read-string
@@ -123,7 +132,8 @@
 (defmethod read-template* :default [template]
   [:html (string-template/load-template (dir-path :templates) template)])
 
-(def read-template (memo read-template*))
+(defn read-template [template-filename]
+  (cache/read-cached-file [:template template-filename] read-template*))
 
 (defn write-out-dir [file str]
   (let [{:keys [out-dir encoding]} (config/config)]
