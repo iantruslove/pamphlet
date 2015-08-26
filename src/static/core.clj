@@ -52,7 +52,7 @@
                    (config/config :default-template))
         [type template-string] (if (= template :none)
                                  [:none c]
-                                 (io/read-template template))]
+                                 (io/read-template (io/template-file template)))]
     (cond (or (= type :clj)
               (= type :none))
           (binding [*ns* (the-ns 'static.core)

@@ -116,24 +116,28 @@
                                            "org"
                                            "html"]) true)) [] )))
 
-(defn template-language [template-filename]
-  (-> template-filename str FilenameUtils/getExtension .toLowerCase))
+(defn template-file [template-name]
+  (let [full-path (str (dir-path :templates) template-name)
+        file (File. full-path)]
+    (when (not (.exists file))
+      (log/warn "Template does not exist: " full-path))
+    file))
+
+(defn template-language [^File template]
+  (-> template .getAbsolutePath FilenameUtils/getExtension .toLowerCase))
 
 (defmulti read-template* template-language)
 
-(defmethod read-template* "clj" [template]
-  [:clj (-> (str (dir-path :templates) template)
-            (File.)
-            (#(str \(
-                   (slurp % :encoding (config/config :encoding))
-                   \)))
+(defmethod read-template* "clj" [^File template]
+  [:clj (-> (str \((slurp template :encoding (config/config :encoding)) \))
             read-string)])
 
-(defmethod read-template* :default [template]
-  [:html (string-template/load-template (dir-path :templates) template)])
+(defmethod read-template* :default [^File template]
+  [:html (string-template/load-template (.getParent template)
+                                        (.getName template))])
 
-(defn read-template [template-filename]
-  (cache/read-cached-file [:template template-filename] read-template*))
+(defn read-template [^File template-file]
+  (cache/read-cached-file [:template template-file] read-template*))
 
 (defn write-out-dir [file str]
   (let [{:keys [out-dir encoding]} (config/config)]
