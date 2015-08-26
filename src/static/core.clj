@@ -11,8 +11,7 @@
             [static.config :as config]
             [static.io :as io]
             [static.logging :as logging]
-            [stringtemplate-clj.core :as string-template]
-            [watchtower.core :as watcher])
+            [stringtemplate-clj.core :as string-template])
   (:import (java.io File)
            (java.net URL)
            (java.text SimpleDateFormat)
@@ -378,11 +377,9 @@
 (defn watch-and-rebuild
   "Watch for changes and rebuild site on change."
   []
-  (watcher/watcher [(config/config :in-dir)]
-                   (watcher/rate 1000)
-                   (watcher/on-change
-                    (fn [_]
-                      (create-quietly)))))
+  (io/watcher (config/config :in-dir)
+              (fn [_]
+                (create-quietly))))
 
 (defn new-tmp-dir []
   (str (System/getProperty "java.io.tmpdir") "static/"))

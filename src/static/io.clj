@@ -7,7 +7,8 @@
             [hiccup.core :as hiccup]
             [static.config :as config]
             [static.io.cache :as cache]
-            [stringtemplate-clj.core :as string-template])
+            [stringtemplate-clj.core :as string-template]
+            [watchtower.core :as watcher])
   (:import (java.io File)
            (org.apache.commons.io FileUtils FilenameUtils)
            (org.pegdown PegDownProcessor)))
@@ -147,3 +148,14 @@
   (let [cmd [rsync "-avz" "--delete" "--checksum" "-e" "ssh"
              out-dir (str user "@" host ":" deploy-dir)]]
     (log/info (:out (apply sh/sh cmd)))))
+
+(defn watcher
+  "Watches directory, and calls f with a list of changed files when
+  things change."
+  [directory f]
+  (watcher/watcher [directory]
+                   (watcher/rate 1000)
+                   (watcher/on-change (fn [files]
+                                        (doseq [file files]
+                                          (cache/invalidate-cache! file))
+                                        (f files)))))
