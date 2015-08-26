@@ -87,7 +87,7 @@
         to-css  #(str/join "\n" (doall (map css-gen/css %)))]
     [metadata (delay (binding [*ns* (the-ns 'static.core)] (-> content eval to-css)))]))
 
-(defn read-doc [f]
+(defn read-doc [^File f]
   (let [extension (FilenameUtils/getExtension (str f))]
     (cond (= extension "markdown") (read-markdown f)
           (= extension "md") (read-markdown f)
