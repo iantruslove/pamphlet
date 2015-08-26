@@ -69,7 +69,7 @@
   ;; changes to org files. Need to get a bit more clever, and either
   ;; use some kind of cache busting based on the file watcher, or
   ;; parse the org files quickly (e.g. without emacs).
-  (cache/read-cached-file file read-org*))
+  (cache/read-cached-file! file read-org*))
 
 (defn- read-clj [file]
   (let [[metadata & content] (read-string
@@ -137,7 +137,7 @@
                                         (.getName template))])
 
 (defn read-template [^File template-file]
-  (cache/read-cached-file template-file read-template*))
+  (cache/read-cached-file! template-file read-template*))
 
 (defn write-out-dir [file str]
   (let [{:keys [out-dir encoding]} (config/config)]

@@ -11,14 +11,15 @@
 ;; invalidation. An inverted index of sorts.
 (defonce cache-partitions-to-files (atom {}))
 
-(defn associate [partitions file partition]
-  (update partitions file (fn [part-set]
-                            (conj (or part-set #{}) partition))))
+(defn associate! [file partition]
+  (swap! cache-partitions-to-files
+         #(update % file (fn [part-set]
+                           (conj (or part-set #{}) partition)))))
 
 (defn cache-key [file f-miss]
   [file f-miss])
 
-(defn read-cached-file
+(defn read-cached-file!
   "Tries to read filename from the cache. If not in cache, f-miss will
   be called with filename as the first argument, the results of which
   will be added to the cache."
@@ -31,11 +32,11 @@
           (do
             (log/trace "Cache miss:" cache-key)
             ;; Use the processing function as the partition value:
-            (swap! cache-partitions-to-files associate file f-miss)
+            (associate! file f-miss)
             (swap! file-cache cache/miss cache-key (f-miss file))))
         (get cache-key))))
 
-(defn invalidate-cache [file]
+(defn invalidate-cache! [file]
   "Invalidates all cache entries for `file`, regardless of the
   partition they are in."
   (doseq [partition (get @cache-partitions-to-files file)
