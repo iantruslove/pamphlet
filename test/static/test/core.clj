@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [static.core :refer :all]
             [static.io :refer :all]
+            [static.logging :as logging]
             [static.test.dummy-fs :refer :all])
   (:import (java.io File)
            (org.apache.commons.io FileUtils)))
@@ -10,7 +11,7 @@
   (FileUtils/deleteDirectory f))
 
 (defn dummy-fs-fixture [f]
-  (setup-logging!)
+  (logging/setup-logging!)
   (create-dummy-fs)
   (create)
   (f)

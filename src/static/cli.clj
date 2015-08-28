@@ -6,7 +6,8 @@
             [ring.adapter.jetty :as jetty]
             [static.config :as config]
             [static.core :as core]
-            [static.io :as io])
+            [static.io :as io]
+            [static.logging :as logging])
   (:import (java.io File)
            (org.apache.commons.io FileUtils FilenameUtils))
   (:gen-class))
@@ -32,7 +33,7 @@
       (println summary)
       (System/exit 0))
 
-    (core/setup-logging!)
+    (logging/setup-logging!)
 
     (let [out-dir (:out-dir (config/config))
           tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
@@ -44,8 +45,8 @@
           (config/set!-config :out-dir loc)
           (log/info (str "Using tmp location: " (:out-dir (config/config))))))
 
-      (cond build (core/log-time-elapsed "Build took "
-                                         (core/create))
+      (cond build (logging/log-time-elapsed "Build took "
+                                            (core/create))
             watch (do (core/watch-and-rebuild)
                       (future (jetty/run-jetty core/serve-static {:port 8080}))
                       (browse/browse-url "http://127.0.0.1:8080"))

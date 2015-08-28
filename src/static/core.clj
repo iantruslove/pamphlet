@@ -8,6 +8,7 @@
             [ring.util.response :refer :all]
             [static.config :as config]
             [static.io :as io]
+            [static.logging :as logging]
             [stringtemplate-clj.core :as string-template]
             [watchtower.core :as watcher])
   (:import (java.io File)
@@ -15,23 +16,6 @@
            (java.text SimpleDateFormat)
            (org.apache.commons.io FileUtils FilenameUtils)))
 
-(defn setup-logging! []
-  (let [logger (java.util.logging.Logger/getLogger "")]
-    (doseq [handler (.getHandlers logger)]
-      (. handler setFormatter
-         (proxy [java.util.logging.Formatter] []
-           (format
-             [record]
-             (str "[+] " (.getLevel record) ": " (.getMessage record) "\n")))))))
-
-(defmacro log-time-elapsed
-  "Evaluates expr and logs the time it took.  Returns the value of expr."
-  {:added "1.0"}
-  [msg & expr]
-  `(let [start# (. System (currentTimeMillis))
-         ret# (do ~@expr)]
-     (log/info (str ~msg " " (/ (double (- (. System (currentTimeMillis)) start#)) 1000.0) " secs"))
-     ret#))
 
 (defn parse-date
   "Format date from in spec to out spec."
@@ -339,22 +323,22 @@
     (FileUtils/deleteDirectory)
     (.mkdir))
 
-  (log-time-elapsed "Processing Public " (process-public))
-  (log-time-elapsed "Processing Site " (process-site))
+  (logging/log-time-elapsed "Processing Public " (process-public))
+  (logging/log-time-elapsed "Processing Site " (process-site))
 
   (when (pos? (-> (io/dir-path :posts) (File.) .list count))
-    (log-time-elapsed "Processing Posts " (process-posts))
-    (log-time-elapsed "Creating RSS " (create-rss))
-    (log-time-elapsed "Creating Tags " (create-tags))
+    (logging/log-time-elapsed "Processing Posts " (process-posts))
+    (logging/log-time-elapsed "Creating RSS " (create-rss))
+    (logging/log-time-elapsed "Creating Tags " (create-tags))
 
     (when (:create-archives (config/config))
-      (log-time-elapsed "Creating Archives " (create-archives)))
+      (logging/log-time-elapsed "Creating Archives " (create-archives)))
 
-    (log-time-elapsed "Creating Sitemap " (create-sitemap))
-    (log-time-elapsed "Creating Aliases " (create-aliases))
+    (logging/log-time-elapsed "Creating Sitemap " (create-sitemap))
+    (logging/log-time-elapsed "Creating Aliases " (create-aliases))
 
     (when (:blog-as-index (config/config))
-      (log-time-elapsed "Creating Latest Posts " (create-latest-posts))
+      (logging/log-time-elapsed "Creating Latest Posts " (create-latest-posts))
       (let [max (apply max (map read-string (-> (:out-dir (config/config))
                                                 (str  "latest-posts/")
                                                 (File.)
