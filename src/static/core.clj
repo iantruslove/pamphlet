@@ -378,7 +378,7 @@
 
 (defn do-watch! [use-system-tmp-dir?]
   (when use-system-tmp-dir?
-    (config/set!-config :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
     (log/info (str "Using tmp location: " (:out-dir (config/config)))))
   (watch-and-rebuild)
   (future (jetty/run-jetty serve-static {:port 8080}))
@@ -388,7 +388,7 @@
   (let [tmp-dir (new-tmp-dir)
         atomic-build? (:atomic-build (config/config))]
     (when atomic-build?
-      (config/set!-config :out-dir (FilenameUtils/normalize tmp-dir))
+      (config/set-config! :out-dir (FilenameUtils/normalize tmp-dir))
       (log/info (str "Using tmp location: " (:out-dir (config/config)))))
     (logging/log-time-elapsed "Build took "
                               (create))
@@ -400,7 +400,7 @@
 
 (defn do-jetty! [use-system-tmp-dir?]
   (when use-system-tmp-dir?
-    (config/set!-config :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
     (log/info (str "Using tmp location: " (:out-dir (config/config)))))
   (future (jetty/run-jetty serve-static {:port 8080}))
   (browse/browse-url "http://127.0.0.1:8080")
@@ -408,7 +408,7 @@
 
 (defn do-rsync! [use-system-tmp-dir?]
   (when use-system-tmp-dir?
-    (config/set!-config :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
     (log/info (str "Using tmp location: " (:out-dir (config/config)))))
   (let [{:keys [rsync out-dir host user deploy-dir]} (config/config)]
     (io/deploy-rsync rsync out-dir host user deploy-dir))
