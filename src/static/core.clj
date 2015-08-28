@@ -2,7 +2,6 @@
   (:require [clojure.core.memoize :refer [memo-clear!]]
             [clojure.java.browse :as browse]
             [clojure.string :as str]
-            [clojure.tools.cli :as cli]
             [clojure.tools.logging :as log]
             [hiccup.core :as hiccup]
             [hiccup.page :refer :all]
@@ -11,31 +10,14 @@
             [ring.util.response :refer :all]
             [static.config :as config]
             [static.io :as io]
+            [static.logging :as logging]
             [stringtemplate-clj.core :as string-template]
             [watchtower.core :as watcher])
   (:import (java.io File)
            (java.net URL)
            (java.text SimpleDateFormat)
-           (org.apache.commons.io FileUtils FilenameUtils))
-  (:gen-class))
+           (org.apache.commons.io FileUtils FilenameUtils)))
 
-(defn setup-logging []
-  (let [logger (java.util.logging.Logger/getLogger "")]
-    (doseq [handler (.getHandlers logger)]
-      (. handler setFormatter
-         (proxy [java.util.logging.Formatter] []
-           (format
-             [record]
-             (str "[+] " (.getLevel record) ": " (.getMessage record) "\n")))))))
-
-(defmacro log-time-elapsed
-  "Evaluates expr and logs the time it took.  Returns the value of expr."
-  {:added "1.0"}
-  [msg & expr]
-  `(let [start# (. System (currentTimeMillis))
-         ret# (do ~@expr)]
-     (log/info (str ~msg " " (/ (double (- (. System (currentTimeMillis)) start#)) 1000.0) " secs"))
-     ret#))
 
 (defn parse-date
   "Format date from in spec to out spec."
@@ -58,7 +40,7 @@
       (FilenameUtils/removeExtension)
       (str "."
            (or ext
-               (:default-extension (config/config))))))
+               (config/config :default-extension)))))
 
 (def ^:dynamic metadata nil)
 (def ^:dynamic content nil)
@@ -67,7 +49,7 @@
   (let [[m c] page
         template (if (:template m)
                    (:template m)
-                   (:default-template (config/config)))
+                   (config/config :default-template))
         [type template-string] (if (= template :none)
                                  [:none c]
                                  (io/read-template template))]
@@ -90,10 +72,8 @@
    (pmap
     #(let [f %
            [metadata content] (io/read-doc f)]
-
        (if (empty? @content)
          (log/warn (str "Empty Content: " f)))
-
        (io/write-out-dir
         (site-url f (:extension metadata))
         (template [(assoc metadata :type :site) @content])))
@@ -109,7 +89,7 @@
   (let [[metadata content] (io/read-doc file)]
     [:item
      [:title (escape-html (:title metadata))]
-     [:link  (str (URL. (URL. (:site-url (config/config))) (post-url file)))]
+     [:link  (str (URL. (URL. (config/config :site-url)) (post-url file)))]
      [:pubDate (parse-date "yyyy-MM-dd" "E, d MMM yyyy HH:mm:ss Z"
                            (re-find #"\d*-\d*-\d*"
                                     (FilenameUtils/getBaseName (str file))))]
@@ -118,25 +98,26 @@
 (defn create-rss
   "Create RSS feed."
   []
-  (let [in-dir (File. (io/dir-path :posts))
+  (let [{:keys [site-title site-url site-description]} (config/config)
+        in-dir (File. (io/dir-path :posts))
         posts (take 10 (reverse (io/list-files :posts)))]
     (io/write-out-dir "rss-feed"
-                   (hiccup/html (xml-declaration "UTF-8")
-                         (doctype :xhtml-strict)
-                         [:rss {:version "2.0"}
-                          [:channel
-                           [:title (escape-html (:site-title (config/config)))]
-                           [:link (:site-url (config/config))]
-                           [:description
-                            (escape-html (:site-description (config/config)))]
-                           (pmap post-xml posts)]]))))
+                      (hiccup/html (xml-declaration "UTF-8")
+                                   (doctype :xhtml-strict)
+                                   [:rss {:version "2.0"}
+                                    [:channel
+                                     [:title (escape-html site-title)]
+                                     [:link site-url]
+                                     [:description
+                                      (escape-html site-description)]
+                                     (pmap post-xml posts)]]))))
 
 (defn create-sitemap
   "Create sitemap."
   []
   (io/write-out-dir
    "sitemap.xml"
-   (let [base (:site-url (config/config))]
+   (let [base (config/config :site-url)]
      (hiccup/html (xml-declaration "UTF-8")
                   [:urlset {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
                    [:url [:loc base]]
@@ -172,7 +153,8 @@
   []
   (io/write-out-dir "tags/index.html"
                     (template
-                     [{:title "Tags" :template (:default-template (config/config))}
+                     [{:title "Tags"
+                       :template (config/config :default-template)}
                       (hiccup/html
                        [:h2 "Tags"]
                        (map (fn[t]
@@ -199,10 +181,10 @@
                [:a {:href (str "/latest-posts/" (+ page 1) "/")}
                 "Newer Entries &raquo;"]]]
     (cond
-     (<= count-total posts-per-page) nil
-     (= page max-index) (list older)
-     (= page 0) (list newer)
-     :default (list older newer))))
+      (<= count-total posts-per-page) nil
+      (= page max-index) (list older)
+      (= page 0) (list newer)
+      :default (list older newer))))
 
 (defn snippet
   "Render a post for display in index pages."
@@ -218,20 +200,24 @@
 (defn create-latest-posts
   "Create and write latest post pages."
   []
-  (let [posts-per-page (:posts-per-page (config/config))
-        posts (partition posts-per-page
-                         posts-per-page
-                         []
-                         (reverse (io/list-files :posts)))
-        pages (partition 2 (interleave (reverse posts) (range)))
-        [_ max-index] (last pages)]
+  (let [{:keys [posts-per-page
+                site-title-page
+                site-title
+                site-description
+                default-template]} (config/config)
+                posts (partition posts-per-page
+                                 posts-per-page
+                                 []
+                                 (reverse (io/list-files :posts)))
+                pages (partition 2 (interleave (reverse posts) (range)))
+                [_ max-index] (last pages)]
     (doseq [[posts page] pages]
       (io/write-out-dir
        (str "latest-posts/" page "/index.html")
        (template
-        [{:title (:site-title (config/config))
-          :description (:site-description (config/config))
-          :template (:default-template (config/config))}
+        [{:title (config/config :site-title)
+          :description (config/config :site-description)
+          :template (config/config :default-template)}
          (hiccup/html (list (map #(snippet %) posts)
                             (pager page max-index posts-per-page)))])))))
 
@@ -259,7 +245,7 @@
   (io/write-out-dir
    (str "archives/index.html")
    (template
-    [{:title "Archives" :template (:default-template (config/config))}
+    [{:title "Archives" :template (config/config :default-template)}
      (hiccup/html
       (list [:h2 "Archives"]
             [:ul
@@ -316,10 +302,9 @@
            out-file (if (empty? (:post-out-subdir (config/config)))
                       out-file
                       (str (:post-out-subdir (config/config)) "/" out-file))]
-
+       (log/debug "Process post:" (.getName f) "->" out-file)
        (when (empty? @content)
          (log/warn (str "Empty Content: " f)))
-
        (io/write-out-dir
         (str out-file "/index.html")
         (template
@@ -330,7 +315,7 @@
   "Copy public from in-dir to out-dir."
   []
   (let [in-dir (File. (io/dir-path :public))
-        out-dir (File. (:out-dir (config/config)))]
+        out-dir (File. (config/config :out-dir))]
     (doseq [f (map #(File. in-dir %) (.list in-dir))]
       (if (.isFile f)
         (FileUtils/copyFileToDirectory f out-dir)
@@ -339,40 +324,42 @@
 (defn create
   "Build Site."
   []
-  (doto (File. (:out-dir (config/config)))
-    (FileUtils/deleteDirectory)
-    (.mkdir))
+  (let [{create-archives? :create-archives
+         blog-as-index? :blog-as-index
+         :keys [out-dir]} (config/config)]
+    (doto (File. out-dir)
+      (FileUtils/deleteDirectory)
+      (.mkdir))
 
-  (log-time-elapsed "Processing Public " (process-public))
-  (log-time-elapsed "Processing Site " (process-site))
+    (logging/log-time-elapsed "Processing Public " (process-public))
+    (logging/log-time-elapsed "Processing Site " (process-site))
 
-  (when (pos? (-> (io/dir-path :posts) (File.) .list count))
-    (log-time-elapsed "Processing Posts " (process-posts))
-    (log-time-elapsed "Creating RSS " (create-rss))
-    (log-time-elapsed "Creating Tags " (create-tags))
+    (when (pos? (-> (io/dir-path :posts) (File.) .list count))
+      (logging/log-time-elapsed "Processing Posts " (process-posts))
+      (logging/log-time-elapsed "Creating RSS " (create-rss))
+      (logging/log-time-elapsed "Creating Tags " (create-tags))
 
-    (when (:create-archives (config/config))
-      (log-time-elapsed "Creating Archives " (create-archives)))
+      (when create-archives?
+        (logging/log-time-elapsed "Creating Archives " (create-archives)))
 
-    (log-time-elapsed "Creating Sitemap " (create-sitemap))
-    (log-time-elapsed "Creating Aliases " (create-aliases))
+      (logging/log-time-elapsed "Creating Sitemap " (create-sitemap))
+      (logging/log-time-elapsed "Creating Aliases " (create-aliases))
 
-    (when (:blog-as-index (config/config))
-      (log-time-elapsed "Creating Latest Posts " (create-latest-posts))
-      (let [max (apply max (map read-string (-> (:out-dir (config/config))
-                                                (str  "latest-posts/")
-                                                (File.)
-                                                .list)))]
-        (FileUtils/copyFile
-         (File. (str (:out-dir (config/config))
-                     "latest-posts/" max "/index.html"))
-         (File. (str (:out-dir (config/config)) "index.html")))))))
+      (when blog-as-index?
+        (logging/log-time-elapsed "Creating Latest Posts " (create-latest-posts))
+        (let [max (apply max (map read-string (-> out-dir
+                                                  (str "latest-posts/")
+                                                  (File.)
+                                                  .list)))]
+          (FileUtils/copyFile
+           (File. (str out-dir "latest-posts/" max "/index.html"))
+           (File. (str out-dir "index.html"))))))))
 
 (defn serve-static [req]
   (let [mime-types {".clj" "text/plain"
                     ".mp4" "video/mp4"
                     ".ogv" "video/ogg"}]
-    (if-let [f (file-response (:uri req) {:root (:out-dir (config/config))})]
+    (if-let [f (file-response (:uri req) {:root (config/config :out-dir)})]
       (if-let [mimetype (mime-types (re-find #"\..+$" (:uri req)))]
         (merge f {:headers {"Content-Type" mimetype}})
         f))))
@@ -380,7 +367,7 @@
 (defn watch-and-rebuild
   "Watch for changes and rebuild site on change."
   []
-  (watcher/watcher [(:in-dir (config/config))]
+  (watcher/watcher [(config/config :in-dir)]
                    (watcher/rate 1000)
                    (watcher/on-change
                     (fn [_]
@@ -391,53 +378,44 @@
                         (catch Exception e
                           (log/error (str "Exception thrown while building site! " e))))))))
 
-(def cli-opts [[nil "--build" "Build Site."]
-               [nil "--tmp" "Use tmp location override :out-dir"]
-               [nil "--jetty" "View Site."]
-               [nil "--watch" "Watch Site and Rebuild on Change."]
-               [nil "--rsync" "Deploy Site."]
-               [nil "--help" "Show help"]])
+(defn new-tmp-dir []
+  (str (System/getProperty "java.io.tmpdir") "static/"))
 
-(defn -main [& args]
-  (let [{:keys [options summary errors]} (cli/parse-opts args cli-opts)
-        {:keys [build tmp jetty watch rsync help]} options]
+(defn do-watch! [use-system-tmp-dir?]
+  (when use-system-tmp-dir?
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (log/info (str "Using tmp location: " (config/config :out-dir))))
+  (watch-and-rebuild)
+  (future (jetty/run-jetty serve-static {:port 8080}))
+  (browse/browse-url "http://127.0.0.1:8080"))
 
-    (when errors
-      (println (str/join "\n" errors))
-      (System/exit 1))
+(defn do-build! []
+  (let [tmp-dir (new-tmp-dir)
+        out-dir (config/config :out-dir)
+        atomic-build? (config/config :atomic-build)]
+    (when atomic-build?
+      (config/set-config! :out-dir (FilenameUtils/normalize tmp-dir))
+      (log/info (str "Using tmp location: " (config/config :out-dir))))
+    (logging/log-time-elapsed "Build took "
+                              (create))
+    (when atomic-build?
+      (log/info "Moving generated site from" tmp-dir "to" out-dir)
+      (FileUtils/deleteDirectory (File. out-dir))
+      (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir)))
+    (shutdown-agents)))
 
-    (when help
-      (println "Static: a static blog generator.\n")
-      (println "Usage: static <option>:")
-      (println summary)
-      (System/exit 0))
+(defn do-jetty! [use-system-tmp-dir?]
+  (when use-system-tmp-dir?
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (log/info (str "Using tmp location: " (config/config :out-dir))))
+  (future (jetty/run-jetty serve-static {:port 8080}))
+  (browse/browse-url "http://127.0.0.1:8080")
+  (shutdown-agents))
 
-    (setup-logging)
-
-    (let [out-dir (:out-dir (config/config))
-          tmp-dir (str (System/getProperty "java.io.tmpdir") "/" "static/")]
-
-      (when (or tmp
-                (and (:atomic-build (config/config))
-                     build))
-        (let [loc (FilenameUtils/normalize tmp-dir)]
-          (config/set!-config :out-dir loc)
-          (log/info (str "Using tmp location: " (:out-dir (config/config))))))
-
-      (cond build (log-time-elapsed "Build took " (create))
-            watch (do (watch-and-rebuild)
-                      (future (jetty/run-jetty serve-static {:port 8080}))
-                      (browse/browse-url "http://127.0.0.1:8080"))
-            jetty (do (future (jetty/run-jetty serve-static {:port 8080}))
-                      (browse/browse-url "http://127.0.0.1:8080"))
-            rsync (let [{:keys [rsync out-dir host user deploy-dir]} (config/config)]
-                    (io/deploy-rsync rsync out-dir host user deploy-dir))
-            :default (println "Use --help for options."))
-
-      (when (and (:atomic-build (config/config))
-                 build)
-        (FileUtils/deleteDirectory (File. out-dir))
-        (FileUtils/moveDirectory (File. tmp-dir) (File. out-dir))))
-
-    (when-not watch
-      (shutdown-agents))))
+(defn do-rsync! [use-system-tmp-dir?]
+  (when use-system-tmp-dir?
+    (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
+    (log/info (str "Using tmp location: " (config/config :out-dir))))
+  (let [{:keys [rsync out-dir host user deploy-dir]} (config/config)]
+    (io/deploy-rsync rsync out-dir host user deploy-dir))
+  (shutdown-agents))

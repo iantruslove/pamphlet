@@ -1,7 +1,9 @@
 (ns static.test.core
   (:require [clojure.test :refer :all]
+            [static.config :as config]
             [static.core :refer :all]
             [static.io :refer :all]
+            [static.logging :as logging]
             [static.test.dummy-fs :refer :all])
   (:import (java.io File)
            (org.apache.commons.io FileUtils)))
@@ -10,8 +12,9 @@
   (FileUtils/deleteDirectory f))
 
 (defn dummy-fs-fixture [f]
-  (setup-logging)
+  (logging/setup-logging!)
   (create-dummy-fs)
+  (config/init-config! (config/load-standalone-config))
   (create)
   (f)
   (delete-file-recursively (File. "resources/"))
@@ -22,7 +25,7 @@
 
 (deftest test-markdown
   (let [[metadata content] (read-doc "resources/site/dummy.markdown")]
-    (is (= "unit test"  (:tags metadata)))
+    (is (= "unit test" (:tags metadata)))
     (is (= "some dummy desc" (:description metadata)))
     (is (= "dummy content" (:title metadata)))
     (is (= "Some dummy file for unit testing."
