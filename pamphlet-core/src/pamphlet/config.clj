@@ -1,11 +1,11 @@
-(ns static.config
+(ns pamphlet.config
   (:require [clojure.tools.logging :as log])
   (:import (java.io File)))
 
 (def config-defaults
   {:site-title "A Static Blog"
    :site-description "Default blog description"
-   :site-url "https://github.com/nakkaya/static"
+   :site-url "https://github.com/iantruslove/pamphlet"
    :in-dir "resources/"
    :out-dir "html/"
    :post-out-subdir ""

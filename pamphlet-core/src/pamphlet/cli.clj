@@ -1,11 +1,11 @@
-(ns static.cli
+(ns pamphlet.cli
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]
             [clojure.tools.logging :as log]
-            [static.config :as config]
-            [static.core :as core]
-            [static.io :as io]
-            [static.logging :as logging])
+            [pamphlet.config :as config]
+            [pamphlet.core :as core]
+            [pamphlet.io :as io]
+            [pamphlet.logging :as logging])
   (:import (java.io File)
            (org.apache.commons.io FileUtils FilenameUtils))
   (:gen-class))
@@ -35,8 +35,8 @@
       (System/exit 1))
 
     (when help
-      (println (str/join "\n" ["Static: a static blog generator."
-                               "Usage: static <option>:"
+      (println (str/join "\n" ["Pamphlet: a static blog generator."
+                               "Usage: pamphlet <option>:"
                                (summarize-opts)]))
       (System/exit 0))
 

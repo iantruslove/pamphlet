@@ -1,4 +1,4 @@
-(ns static.test.dummy-fs
+(ns pamphlet.test.dummy-fs
   (:import (java.io File)))
 
 (defn- create-resources []

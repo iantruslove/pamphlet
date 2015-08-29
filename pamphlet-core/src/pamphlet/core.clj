@@ -1,4 +1,4 @@
-(ns static.core
+(ns pamphlet.core
   (:require [clojure.core.memoize :refer [memo-clear!]]
             [clojure.java.browse :as browse]
             [clojure.string :as str]
@@ -8,9 +8,9 @@
             [hiccup.util :refer :all]
             [ring.adapter.jetty :as jetty]
             [ring.util.response :refer :all]
-            [static.config :as config]
-            [static.io :as io]
-            [static.logging :as logging]
+            [pamphlet.config :as config]
+            [pamphlet.io :as io]
+            [pamphlet.logging :as logging]
             [stringtemplate-clj.core :as string-template])
   (:import (java.io File)
            (java.net URL)
@@ -54,7 +54,7 @@
                                  (io/read-template (io/template-file template)))]
     (cond (or (= type :clj)
               (= type :none))
-          (binding [*ns* (the-ns 'static.core)
+          (binding [*ns* (the-ns 'pamphlet.core)
                     metadata m content c]
             (hiccup/html (map #(eval %) template-string)))
           (= type :html)
@@ -382,7 +382,7 @@
                 (create-quietly))))
 
 (defn new-tmp-dir []
-  (str (System/getProperty "java.io.tmpdir") "static/"))
+  (str (System/getProperty "java.io.tmpdir") "pamphlet/"))
 
 (defn do-watch! [use-system-tmp-dir?]
   (when use-system-tmp-dir?
