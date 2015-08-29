@@ -1,6 +1,7 @@
 (defproject static "1.1.0-SNAPSHOT"
   :description "Simple static site generator."
   :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/core.cache "0.6.4"]
                  [org.clojure/tools.cli "0.3.2"]
                  [org.clojure/tools.logging "0.3.1"]
                  [cssgen "0.3.0-SNAPSHOT" :exclusions [org.clojure/clojure]]

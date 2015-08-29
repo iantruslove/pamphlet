@@ -6,7 +6,9 @@
             [cssgen :as css-gen]
             [hiccup.core :as hiccup]
             [static.config :as config]
-            [stringtemplate-clj.core :as string-template])
+            [static.io.cache :as cache]
+            [stringtemplate-clj.core :as string-template]
+            [watchtower.core :as watcher])
   (:import (java.io File)
            (org.apache.commons.io FileUtils FilenameUtils)
            (org.pegdown PegDownProcessor)))
@@ -46,7 +48,7 @@
         (split-file (slurp file :encoding (config/config :encoding)))]
     [(prepare-metadata metadata) (delay content)]))
 
-(defn read-org [file]
+(defn read-org* [file]
   (if (not (config/config :emacs))
     (do (log/error "Path to Emacs is required for org files.")
         (System/exit 0)))
@@ -61,6 +63,14 @@
                                      " (find-file \"" (.getAbsolutePath file) "\") "
                                      org-export-command ")"))))]
     [metadata content]))
+
+;; We really need to parse each file once. So we memoize the results
+(defn read-org [file]
+  ;; BUG: not invalidating the file cache prevents `--watch` from picking up
+  ;; changes to org files. Need to get a bit more clever, and either
+  ;; use some kind of cache busting based on the file watcher, or
+  ;; parse the org files quickly (e.g. without emacs).
+  (cache/read-cached-file! file read-org*))
 
 (defn- read-clj [file]
   (let [[metadata & content] (read-string
@@ -78,7 +88,7 @@
         to-css  #(str/join "\n" (doall (map css-gen/css %)))]
     [metadata (delay (binding [*ns* (the-ns 'static.core)] (-> content eval to-css)))]))
 
-(defn read-doc [f]
+(defn read-doc [^File f]
   (let [extension (FilenameUtils/getExtension (str f))]
     (cond (= extension "markdown") (read-markdown f)
           (= extension "md") (read-markdown f)
@@ -107,21 +117,28 @@
                                            "org"
                                            "html"]) true)) [] )))
 
-(def read-template
-  (memo
-   (fn [template]
-     (let [extension (FilenameUtils/getExtension (str template))]
-       (cond (= extension "clj")
-             [:clj
-              (-> (str (dir-path :templates) template)
-                  (File.)
-                  (#(str \(
-                         (slurp % :encoding (config/config :encoding))
-                         \)))
-                  read-string)]
-             :default
-             [:html
-              (string-template/load-template (dir-path :templates) template)])))))
+(defn template-file [template-name]
+  (let [full-path (str (dir-path :templates) template-name)
+        file (File. full-path)]
+    (when (not (.exists file))
+      (log/warn "Template does not exist: " full-path))
+    file))
+
+(defn template-language [^File template]
+  (-> template .getAbsolutePath FilenameUtils/getExtension .toLowerCase))
+
+(defmulti read-template* template-language)
+
+(defmethod read-template* "clj" [^File template]
+  [:clj (-> (str \((slurp template :encoding (config/config :encoding)) \))
+            read-string)])
+
+(defmethod read-template* :default [^File template]
+  [:html (string-template/load-template (.getParent template)
+                                        (.getName template))])
+
+(defn read-template [^File template-file]
+  (cache/read-cached-file! template-file read-template*))
 
 (defn write-out-dir [file str]
   (let [{:keys [out-dir encoding]} (config/config)]
@@ -131,3 +148,14 @@
   (let [cmd [rsync "-avz" "--delete" "--checksum" "-e" "ssh"
              out-dir (str user "@" host ":" deploy-dir)]]
     (log/info (:out (apply sh/sh cmd)))))
+
+(defn watcher
+  "Watches directory, and calls f with a list of changed files when
+  things change."
+  [directory f]
+  (watcher/watcher [directory]
+                   (watcher/rate 1000)
+                   (watcher/on-change (fn [files]
+                                        (doseq [file files]
+                                          (cache/invalidate-cache! file))
+                                        (f files)))))

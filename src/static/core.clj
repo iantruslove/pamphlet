@@ -11,8 +11,7 @@
             [static.config :as config]
             [static.io :as io]
             [static.logging :as logging]
-            [stringtemplate-clj.core :as string-template]
-            [watchtower.core :as watcher])
+            [stringtemplate-clj.core :as string-template])
   (:import (java.io File)
            (java.net URL)
            (java.text SimpleDateFormat)
@@ -52,7 +51,7 @@
                    (config/config :default-template))
         [type template-string] (if (= template :none)
                                  [:none c]
-                                 (io/read-template template))]
+                                 (io/read-template (io/template-file template)))]
     (cond (or (= type :clj)
               (= type :none))
           (binding [*ns* (the-ns 'static.core)
@@ -327,7 +326,9 @@
   (let [{create-archives? :create-archives
          blog-as-index? :blog-as-index
          :keys [out-dir]} (config/config)]
+    (log/info "Rebuilding site...")
     (doto (File. out-dir)
+
       (FileUtils/deleteDirectory)
       (.mkdir))
 
@@ -355,6 +356,15 @@
            (File. (str out-dir "latest-posts/" max "/index.html"))
            (File. (str out-dir "index.html"))))))))
 
+(defn create-quietly
+  "Build site, logging and swallowing exceptions."
+  []
+  (try
+    (memo-clear! io/read-template)
+    (create)
+    (catch Exception e
+      (log/error e "Exception thrown while building site!"))))
+
 (defn serve-static [req]
   (let [mime-types {".clj" "text/plain"
                     ".mp4" "video/mp4"
@@ -367,16 +377,9 @@
 (defn watch-and-rebuild
   "Watch for changes and rebuild site on change."
   []
-  (watcher/watcher [(config/config :in-dir)]
-                   (watcher/rate 1000)
-                   (watcher/on-change
-                    (fn [_]
-                      (log/info "Rebuilding site...")
-                      (try
-                        (memo-clear! io/read-template)
-                        (create)
-                        (catch Exception e
-                          (log/error (str "Exception thrown while building site! " e))))))))
+  (io/watcher (config/config :in-dir)
+              (fn [_]
+                (create-quietly))))
 
 (defn new-tmp-dir []
   (str (System/getProperty "java.io.tmpdir") "static/"))
@@ -385,8 +388,9 @@
   (when use-system-tmp-dir?
     (config/set-config! :out-dir (FilenameUtils/normalize (new-tmp-dir)))
     (log/info (str "Using tmp location: " (config/config :out-dir))))
-  (watch-and-rebuild)
+  (create-quietly)
   (future (jetty/run-jetty serve-static {:port 8080}))
+  (watch-and-rebuild)
   (browse/browse-url "http://127.0.0.1:8080"))
 
 (defn do-build! []
