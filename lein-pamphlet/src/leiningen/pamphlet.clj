@@ -1,4 +1,4 @@
-(ns leiningen.static
+(ns leiningen.pamphlet
   (:require [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [static.cli :as cli]
@@ -7,8 +7,8 @@
             [static.logging :as logging]))
 
 (defn get-config [project]
-  (if (map? (:static-config project))
-    (:static-config project)
+  (if (map? (:pamphlet-config project))
+    (:pamphlet-config project)
     (config/load-standalone-config)))
 
 (defn block-thread-forever []
@@ -17,8 +17,8 @@
     (recur)))
 
 (defn ^:no-project-needed ^:pass-through-help
-  static
-  "Static: a static website generator.
+  pamphlet
+  "pamphlet: a static website generator.
 
   use --help to see help."
   [project & args]
@@ -27,8 +27,8 @@
 
     (cond
       errors (println (str/join "\n" errors))
-      help (println (str/join "\n" ["Static: a static blog generator."
-                                    "Usage: lein static <option>:"
+      help (println (str/join "\n" ["Pamphlet: a static blog generator."
+                                    "Usage: lein pamphlet <option>:"
                                     (cli/summarize-opts)]))
       (some identity [build watch jetty rsync])
       (do (logging/setup-logging!)
