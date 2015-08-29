@@ -1,10 +1,10 @@
-(ns static.test.core
+(ns pamphlet.test.core
   (:require [clojure.test :refer :all]
-            [static.config :as config]
-            [static.core :refer :all]
-            [static.io :refer :all]
-            [static.logging :as logging]
-            [static.test.dummy-fs :refer :all])
+            [pamphlet.config :as config]
+            [pamphlet.core :refer :all]
+            [pamphlet.io :refer :all]
+            [pamphlet.logging :as logging]
+            [pamphlet.test.dummy-fs :refer :all])
   (:import (java.io File)
            (org.apache.commons.io FileUtils)))
 

@@ -1,4 +1,4 @@
-(defproject static "1.1.0-SNAPSHOT"
+(defproject pamphlet-core "0.1.0-SNAPSHOT"
   :description "Simple static site generator."
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/core.cache "0.6.4"]

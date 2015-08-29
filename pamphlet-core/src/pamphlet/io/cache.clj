@@ -1,4 +1,4 @@
-(ns static.io.cache
+(ns pamphlet.io.cache
   (:require [clojure.core.cache :as cache]
             [clojure.tools.logging :as log]))
 

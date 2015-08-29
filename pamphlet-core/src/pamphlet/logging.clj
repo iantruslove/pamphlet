@@ -1,4 +1,4 @@
-(ns static.logging
+(ns pamphlet.logging
   (:require [clojure.tools.logging :as log])
   (:import (java.util.logging Formatter
                               Logger)))

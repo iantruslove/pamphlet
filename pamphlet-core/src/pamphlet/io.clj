@@ -1,12 +1,12 @@
-(ns static.io
+(ns pamphlet.io
   (:require [clojure.core.memoize :refer [memo]]
             [clojure.java.shell :as sh]
             [clojure.string :as str]
             [clojure.tools.logging :as log]
             [cssgen :as css-gen]
             [hiccup.core :as hiccup]
-            [static.config :as config]
-            [static.io.cache :as cache]
+            [pamphlet.config :as config]
+            [pamphlet.io.cache :as cache]
             [stringtemplate-clj.core :as string-template]
             [watchtower.core :as watcher])
   (:import (java.io File)
@@ -75,7 +75,7 @@
 (defn- read-clj [file]
   (let [[metadata & content] (read-string
                               (str \( (slurp file :encoding (config/config :encoding)) \)))]
-    [metadata (delay (binding [*ns* (the-ns 'static.core)]
+    [metadata (delay (binding [*ns* (the-ns 'pamphlet.core)]
                        (->> content
                             (map eval)
                             last
@@ -86,7 +86,7 @@
         content (read-string
                  (slurp file :encoding (config/config :encoding)))
         to-css  #(str/join "\n" (doall (map css-gen/css %)))]
-    [metadata (delay (binding [*ns* (the-ns 'static.core)] (-> content eval to-css)))]))
+    [metadata (delay (binding [*ns* (the-ns 'pamphlet.core)] (-> content eval to-css)))]))
 
 (defn read-doc [^File f]
   (let [extension (FilenameUtils/getExtension (str f))]

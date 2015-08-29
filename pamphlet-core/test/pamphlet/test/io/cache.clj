@@ -1,6 +1,6 @@
-(ns static.test.io.cache
+(ns pamphlet.test.io.cache
   (:require [clojure.test :refer :all]
-            [static.io.cache :refer :all]))
+            [pamphlet.io.cache :refer :all]))
 
 (defn clear-cache-fixture [f]
   (reset! file-cache (new-file-cache))

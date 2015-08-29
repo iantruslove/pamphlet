@@ -1,6 +1,6 @@
-(ns static.test.io
+(ns pamphlet.test.io
   (:require [clojure.test :refer :all]
-            [static.io :as io]))
+            [pamphlet.io :as io]))
 
 (deftest test-prepare-metadata
   (is (= {} (#'io/prepare-metadata "")))
