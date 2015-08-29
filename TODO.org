@@ -1,0 +1,61 @@
+* Todos [0%]
+- [ ] Docs
+  - [ ] Add READMEs to all the projects
+  - [ ] Figure out a license
+- [ ] Let content files live in root folders, not just within /resources
+- [ ] Logging [0/2]
+  - [ ] -vvv verbose logging additive option, and default to ERROR only
+  - [ ] Use one of the logger frameworks and suppress the crufty Jetty log output
+- [ ] Write a lein sample template containing a basic demo site showing a good sample of the features
+- [ ] Remove shell invocations [0/2]
+  - [ ] Process org without Emacs
+  - [ ] Rsync without shelling out
+- [ ] Make themes pluggable packages
+- [ ] Add some new deployment targets [0/2]
+  - [ ] S3
+  - [ ] GitHub pages
+- [ ] Internals [0/3]
+  - [ ] Make the concurrency a bit neater and line up more nicely
+  - [ ] Build a dependency tree and stop regenerating everything when a single file changes
+  - [ ] Use https://github.com/juxt/dirwatch instead of watchtower
+- [ ] Misc / ??? [0/7]
+  - [ ] only load the base template if it exists
+  - [ ] the distinctions between keywords/tags tags/categories projects/site site/page are confusing, it would be really nice to refactor most of that
+  - [ ] create an introductory description
+  - [ ] Different name - pamphlet
+  - [ ] Simplify project structure - main lib, lein plugin, lein template
+  - [ ] Boot tooling as well as Leiningen
+  - [ ] Remove the JAR CLI mode
+
+the era 
+
+https://upload.wikimedia.org/wikipedia/commons/e/ea/Pamphleteer.jpg* Todos [0%]
+- [ ] Docs
+  - [ ] Add READMEs to all the projects
+  - [ ] Figure out a license
+- [ ] Let content files live in root folders, not just within /resources
+- [ ] Logging [0/2]
+  - [ ] -vvv verbose logging additive option, and default to ERROR only
+  - [ ] Use one of the logger frameworks and suppress the crufty Jetty log output
+- [ ] Write a lein sample template containing a basic demo site showing a good sample of the features
+- [ ] Remove shell invocations [0/2]
+  - [ ] Process org without Emacs
+  - [ ] Rsync without shelling out
+- [ ] Make themes pluggable packages
+- [ ] Add some new deployment targets [0/2]
+  - [ ] S3
+  - [ ] GitHub pages
+- [ ] Internals [0/3]
+  - [ ] Make the concurrency a bit neater and line up more nicely
+  - [ ] Build a dependency tree and stop regenerating everything when a single file changes
+  - [ ] Use https://github.com/juxt/dirwatch instead of watchtower
+- [ ] Misc / ??? [0/7]
+  - [ ] Make tests run with localizable emacs configs
+  - [ ] only load the base template if it exists
+  - [ ] the distinctions between keywords/tags tags/categories projects/site site/page are confusing, it would be really nice to refactor most of that
+  - [ ] create an introductory description
+  - [ ] Different name - pamphlet
+  - [ ] Simplify project structure - main lib, lein plugin, lein template
+  - [ ] Boot tooling as well as Leiningen
+  - [ ] Remove the JAR CLI mode
+  
